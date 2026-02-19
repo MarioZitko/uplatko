@@ -1,0 +1,76 @@
+import { useRef, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { extractTextFromPdf, parsePdfText } from "@/modules/pdfParser";
+import type { ParsedPdfFields } from "@/types/hub3";
+
+interface Props {
+	onParsed: (fields: ParsedPdfFields, file: File) => void;
+}
+
+export default function PdfUploader({ onParsed }: Props) {
+	const inputRef = useRef<HTMLInputElement>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+
+	async function handleFile(file: File) {
+		if (file.type !== "application/pdf") {
+			setError("Molimo odaberite PDF datoteku.");
+			return;
+		}
+		setError(null);
+		setLoading(true);
+		try {
+			const text = await extractTextFromPdf(file);
+			const fields = parsePdfText(text);
+			onParsed(fields, file);
+		} catch {
+			setError("Greška pri čitanju PDF-a. Pokušajte ponovo.");
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0];
+		if (file) handleFile(file);
+	}
+
+	function handleDrop(e: React.DragEvent<HTMLDivElement>) {
+		e.preventDefault();
+		const file = e.dataTransfer.files?.[0];
+		if (file) handleFile(file);
+	}
+
+	return (
+		<div className="space-y-4">
+			<Card
+				className="border-dashed border-2 cursor-pointer hover:border-primary transition-colors"
+				onDrop={handleDrop}
+				onDragOver={(e) => e.preventDefault()}
+				onClick={() => inputRef.current?.click()}
+			>
+				<CardContent className="flex flex-col items-center justify-center py-16 text-center">
+					<p className="text-lg font-medium mb-1">Povucite PDF ovdje</p>
+					<p className="text-muted-foreground text-sm mb-4">
+						ili kliknite za odabir datoteke
+					</p>
+					<Button variant="outline" type="button" disabled={loading}>
+						{loading ? "Učitavanje..." : "Odaberi PDF"}
+					</Button>
+					<input
+						ref={inputRef}
+						type="file"
+						accept="application/pdf"
+						className="hidden"
+						onChange={handleInputChange}
+					/>
+				</CardContent>
+			</Card>
+			{error && <p className="text-sm text-destructive">{error}</p>}
+			<p className="text-xs text-muted-foreground">
+				Podaci ostaju lokalno u pregledniku i nigdje se ne šalju.
+			</p>
+		</div>
+	);
+}
