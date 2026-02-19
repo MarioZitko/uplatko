@@ -1,73 +1,138 @@
-# React + TypeScript + Vite
+# Uplatko
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Generator HUB3 uplatnica za hrvatske freelancere i mala poduzeća.**
 
-Currently, two official plugins are available:
+Uplatko je web aplikacija koja čita PDF račune, izvlači podatke o plaćanju i generira HUB3/PDF417 barkod koji možeš pozicionirati direktno na PDF ili preuzeti kao sliku. Sve se odvija lokalno u pregledniku — nikakvi podaci se ne šalju na server.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Značajke
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Učitavanje PDF-a** — drag & drop ili odabir datoteke
+- **Automatsko izvlačenje podataka** — regex parser za hrvatska zaglavlja računa (IBAN, iznos, poziv na broj, primatelj)
+- **AI-potpomognuto čitanje** — opcionalna integracija s Gemini ili Groq API-jem za pouzdanije parsiranje
+- **Uređivanje polja** — forma za provjeru i ispravak izvučenih podataka
+- **Generiranje HUB3 barkoda** — PDF417 barkod sukladan HUB3A standardu
+- **Pozicioniranje drag & drop** — postavi barkod na željenu poziciju na PDF stranici
+- **Promjena veličine** — povuci ugao za prilagodbu veličine barkoda (radi i na mobitelu)
+- **Preuzimanje** — PDF s ugrađenim barkodom ili barkod kao PNG
+- **Privatnost** — svi podaci ostaju u pregledniku, API ključevi se čuvaju samo u localStorage
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tehnologije
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Paket                   | Svrha                                      |
+| ----------------------- | ------------------------------------------ |
+| React + TypeScript      | UI framework                               |
+| Vite                    | Build alat                                 |
+| shadcn/ui + Tailwind v4 | Komponente i stilizacija                   |
+| pdfjs-dist              | Čitanje i renderiranje PDF-a u pregledniku |
+| pdf-lib                 | Ugrađivanje barkoda u PDF                  |
+| bwip-js                 | Generiranje PDF417 barkoda                 |
+| react-hook-form + zod   | Validacija forme                           |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Pokretanje lokalno
+
+```bash
+# Kloniraj repozitorij
+git clone https://github.com/MarioZitko/uplatko.git
+cd uplatko
+
+# Instaliraj ovisnosti
+pnpm install
+
+# Pokreni razvojni server
+pnpm dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Aplikacija će biti dostupna na `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## AI čitanje (opcionalno)
+
+Regex parser je best-effort rješenje — layout računa se razlikuje po sustavu. Za bolje rezultate možeš koristiti jedan od besplatnih AI servisa:
+
+### Groq (preporučeno)
+
+1. Stvori besplatni račun na [console.groq.com](https://console.groq.com)
+2. Generiraj API ključ
+3. U aplikaciji otvori **Postavke** (ikona zupčanika) → unesi ključ pod Groq → odaberi Groq kao aktivni servis
+
+Koristi model `llama-3.3-70b-versatile`. Besplatno, bez kreditne kartice.
+
+### Google Gemini
+
+1. Stvori API ključ na [aistudio.google.com](https://aistudio.google.com/app/apikey)
+2. U aplikaciji otvori **Postavke** → unesi ključ pod Gemini → odaberi Gemini kao aktivni servis
+
+---
+
+## HUB3 standard
+
+Barkod string slijedi točnu strukturu HUB3A specifikacije:
+
 ```
+HRVHUB30
+EUR
+000000000001000   ← 15 znamenki (10.00 EUR)
+Ime platitelja
+Adresa platitelja
+Grad platitelja
+Ime primatelja
+Adresa primatelja
+Grad primatelja
+HR1234567890123456789
+HR68
+123-456-789
+OTHR
+Opis plaćanja
+```
+
+---
+
+## Struktura projekta
+
+```
+src/
+├── components/
+│   ├── ui/                  # shadcn komponente
+│   ├── PdfUploader.tsx      # Upload i parsiranje
+│   ├── PaymentForm.tsx      # Forma za uređivanje podataka
+│   ├── BarcodePreview.tsx   # Pregled barkoda
+│   ├── PdfCanvas.tsx        # PDF prikaz + drag & drop
+│   └── LlmSettingsDialog.tsx
+├── hooks/
+│   ├── useDraggable.ts
+│   └── useResizable.ts
+├── lib/
+│   ├── llmStorage.ts        # localStorage za API ključeve
+│   ├── download.ts
+│   └── pdfWorker.ts
+├── modules/
+│   ├── pdfParser.ts         # Regex parser
+│   ├── geminiParser.ts      # Gemini API
+│   ├── groqParser.ts        # Groq API
+│   ├── hub3Formatter.ts     # HUB3 string builder
+│   ├── barcodeGenerator.ts
+│   └── pdfExporter.ts
+└── types/
+    └── hub3.ts
+```
+
+---
+
+## Poznata ograničenja
+
+- PDF parsiranje je best-effort — layout računa varira između sustava (Sol, eRačun, itd.), polja uvijek treba provjeriti
+- Podržana je samo prva stranica PDF-a
+- Gemini besplatni tier ima dnevne limite koji se mogu brzo iscrpiti
+
+---
+
+## Licenca
+
+MIT
