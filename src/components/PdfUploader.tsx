@@ -2,6 +2,13 @@ import { useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { extractTextFromPdf, parsePdfText } from "@/modules/pdfParser";
+import { parseWithGemini } from "@/modules/geminiParser";
+import { parseWithGroq } from "@/modules/groqParser";
+import {
+	getGeminiApiKey,
+	getGroqApiKey,
+	getLlmProvider,
+} from "@/lib/llmStorage";
 import type { ParsedPdfFields } from "@/types/hub3";
 
 interface Props {
@@ -22,7 +29,45 @@ export default function PdfUploader({ onParsed }: Props) {
 		setLoading(true);
 		try {
 			const text = await extractTextFromPdf(file);
-			const fields = parsePdfText(text);
+			const provider = getLlmProvider();
+			let fields: ParsedPdfFields;
+
+			if (provider === "gemini") {
+				const apiKey = getGeminiApiKey();
+				if (!apiKey) {
+					setError(
+						"Gemini je odabran ali API ključ nije postavljen. Dodaj ga u postavkama.",
+					);
+					fields = parsePdfText(text);
+				} else {
+					try {
+						fields = await parseWithGemini(text, apiKey);
+					} catch (err) {
+						console.warn("Gemini parsing failed, falling back to regex:", err);
+						setError("Gemini nije uspio, korišten regex. Provjerite polja.");
+						fields = parsePdfText(text);
+					}
+				}
+			} else if (provider === "groq") {
+				const apiKey = getGroqApiKey();
+				if (!apiKey) {
+					setError(
+						"Groq je odabran ali API ključ nije postavljen. Dodaj ga u postavkama.",
+					);
+					fields = parsePdfText(text);
+				} else {
+					try {
+						fields = await parseWithGroq(text, apiKey);
+					} catch (err) {
+						console.warn("Groq parsing failed, falling back to regex:", err);
+						setError("Groq nije uspio, korišten regex. Provjerite polja.");
+						fields = parsePdfText(text);
+					}
+				}
+			} else {
+				fields = parsePdfText(text);
+			}
+
 			onParsed(fields, file);
 		} catch {
 			setError("Greška pri čitanju PDF-a. Pokušajte ponovo.");
@@ -67,6 +112,7 @@ export default function PdfUploader({ onParsed }: Props) {
 					/>
 				</CardContent>
 			</Card>
+
 			{error && <p className="text-sm text-destructive">{error}</p>}
 			<p className="text-xs text-muted-foreground">
 				Podaci ostaju lokalno u pregledniku i nigdje se ne šalju.

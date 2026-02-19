@@ -1,7 +1,10 @@
 import { useState } from "react";
+import { Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import PdfUploader from "@/components/PdfUploader";
 import PaymentForm from "@/components/PaymentForm";
 import PdfCanvas from "@/components/PdfCanvas";
+import LlmSettingsDialog from "@/components/LlmSettingsDialog";
 import type { ParsedPdfFields, Hub3Data } from "@/types/hub3";
 
 type Step = "upload" | "form" | "preview";
@@ -11,6 +14,7 @@ export default function App() {
 	const [parsedFields, setParsedFields] = useState<ParsedPdfFields>({});
 	const [hub3Data, setHub3Data] = useState<Hub3Data | null>(null);
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	function handlePdfParsed(fields: ParsedPdfFields, file: File) {
 		setParsedFields(fields);
@@ -30,8 +34,20 @@ export default function App() {
 	return (
 		<main className="min-h-screen bg-background text-foreground">
 			<div className="max-w-3xl mx-auto px-4 py-10">
-				<h1 className="text-3xl font-bold mb-2">Uplatko</h1>
-				<p className="text-muted-foreground mb-8">Generator HUB3 uplatnica</p>
+				<div className="flex items-start justify-between mb-8">
+					<div>
+						<h1 className="text-3xl font-bold mb-2">Uplatko</h1>
+						<p className="text-muted-foreground">Generator HUB3 uplatnica</p>
+					</div>
+					<Button
+						variant="ghost"
+						size="icon"
+						onClick={() => setSettingsOpen(true)}
+						aria-label="Postavke"
+					>
+						<Settings className="h-5 w-5" />
+					</Button>
+				</div>
 
 				{step === "upload" && <PdfUploader onParsed={handlePdfParsed} />}
 				{step === "form" && (
@@ -48,6 +64,8 @@ export default function App() {
 						onBack={handleBack}
 					/>
 				)}
+
+				<LlmSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 			</div>
 		</main>
 	);

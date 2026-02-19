@@ -6,6 +6,7 @@ import BarcodePreview from "@/components/BarcodePreview";
 import { generateBarcode } from "@/modules/barcodeGenerator";
 import { exportPdfWithBarcode } from "@/modules/pdfExporter";
 import { useDraggable } from "@/hooks/useDraggable";
+import { useResizable } from "@/hooks/useResizable";
 import { downloadBlob, dataUrlToBlob } from "@/lib/download";
 import type { Hub3Data } from "@/types/hub3";
 
@@ -15,7 +16,9 @@ interface Props {
 	onBack: () => void;
 }
 
-const BARCODE_SIZE = { width: 280, height: 100 };
+const INITIAL_BARCODE_SIZE = { width: 280, height: 100 };
+const BARCODE_ASPECT_RATIO =
+	INITIAL_BARCODE_SIZE.width / INITIAL_BARCODE_SIZE.height;
 
 export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -24,19 +27,39 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 	const [error, setError] = useState<string | null>(null);
 	const [exporting, setExporting] = useState(false);
 
-	const { position, isDragging, onMouseDown, onMouseMove, onMouseUp } =
-		useDraggable({
-			initialPosition: { x: 40, y: 40 },
-			containerSize: canvasSize,
-			itemSize: BARCODE_SIZE,
-		});
+	const {
+		size: barcodeSize,
+		isResizing,
+		onResizeMouseDown,
+		onResizeTouchStart,
+	} = useResizable({
+		initialSize: INITIAL_BARCODE_SIZE,
+		minSize: { width: 140, height: 50 },
+		maxSize: { width: 560, height: 200 },
+		aspectRatio: BARCODE_ASPECT_RATIO,
+	});
+
+	const {
+		position,
+		isDragging,
+		onMouseDown,
+		onMouseMove,
+		onMouseUp,
+		onTouchStart,
+		onTouchMove,
+		onTouchEnd,
+	} = useDraggable({
+		initialPosition: { x: 40, y: 40 },
+		containerSize: canvasSize,
+		itemSize: barcodeSize,
+	});
+
+	const renderingRef = useRef(false);
 
 	useEffect(() => {
 		renderPdfPage();
 		loadBarcode();
 	}, []);
-
-	const renderingRef = useRef(false);
 
 	async function renderPdfPage() {
 		if (renderingRef.current) return;
@@ -82,7 +105,7 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 				hub3Data,
 				position,
 				canvasSize,
-				barcodeSize: BARCODE_SIZE,
+				barcodeSize,
 			});
 		} catch {
 			setError("Greška pri izvozu PDF-a.");
@@ -107,7 +130,8 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 			<Card>
 				<CardContent className="py-4 space-y-3">
 					<p className="text-sm text-muted-foreground">
-						Povucite barkod na željenu poziciju na dokumentu.
+						Povucite barkod na željenu poziciju. Povucite ugao za promjenu
+						veličine.
 					</p>
 					{error && <p className="text-sm text-destructive">{error}</p>}
 					<div
@@ -117,23 +141,48 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 						onMouseMove={onMouseMove}
 						onMouseUp={onMouseUp}
 						onMouseLeave={onMouseUp}
+						onTouchStart={onTouchStart}
+						onTouchMove={onTouchMove}
+						onTouchEnd={onTouchEnd}
 					>
 						<canvas ref={canvasRef} />
 						{barcodeDataUrl && (
-							<img
-								src={barcodeDataUrl}
-								alt="HUB3 barkod"
-								draggable={false}
+							<div
 								className="absolute select-none"
 								style={{
 									left: position.x,
 									top: position.y,
-									width: BARCODE_SIZE.width,
-									height: BARCODE_SIZE.height,
+									width: barcodeSize.width,
+									height: barcodeSize.height,
 									cursor: isDragging ? "grabbing" : "grab",
 									border: "2px dashed #888",
+									touchAction: "none", // prevent browser scroll interfering with drag
 								}}
-							/>
+							>
+								<img
+									src={barcodeDataUrl}
+									alt="HUB3 barkod"
+									draggable={false}
+									style={{ width: "100%", height: "100%", display: "block" }}
+								/>
+								{/* SE resize handle — large enough to tap on mobile */}
+								<div
+									onMouseDown={onResizeMouseDown}
+									onTouchStart={onResizeTouchStart}
+									style={{
+										position: "absolute",
+										right: -8,
+										bottom: -8,
+										width: 20,
+										height: 20,
+										background: isResizing ? "#2563eb" : "#888",
+										border: "2px solid white",
+										borderRadius: 4,
+										cursor: "se-resize",
+										touchAction: "none",
+									}}
+								/>
+							</div>
 						)}
 					</div>
 				</CardContent>
