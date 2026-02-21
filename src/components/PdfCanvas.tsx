@@ -13,6 +13,7 @@ interface PdfCanvasProps {
 	hub3Data: Hub3Data;
 	pdfFile: File;
 	onBack: () => void;
+	onReset: () => void;
 }
 
 // ============================= | Constants | =============================
@@ -28,6 +29,7 @@ export default function PdfCanvas({
 	hub3Data,
 	pdfFile,
 	onBack,
+	onReset,
 }: PdfCanvasProps) {
 	// ============================= | State | =============================
 
@@ -150,6 +152,9 @@ export default function PdfCanvas({
 			<div className="flex justify-between">
 				<Button variant="outline" onClick={onBack}>
 					Natrag
+				</Button>
+				<Button variant="outline" onClick={onReset}>
+					Novi PDF
 				</Button>
 				<Button
 					onClick={handleDownloadPdf}

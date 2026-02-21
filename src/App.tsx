@@ -34,6 +34,13 @@ export default function App() {
 		setStep((prev) => (prev === "preview" ? "form" : "upload"));
 	}
 
+	function handleReset() {
+		setParsedFields({});
+		setHub3Data(null);
+		setUploadedFile(null);
+		setStep("upload");
+	}
+
 	function toggleTheme() {
 		setTheme(theme === "dark" ? "light" : "dark");
 	}
@@ -76,6 +83,7 @@ export default function App() {
 						initialValues={parsedFields}
 						onSubmit={handleFormSubmit}
 						onBack={handleBack}
+						onReset={handleReset}
 					/>
 				)}
 				{step === "preview" && hub3Data && uploadedFile && (
@@ -83,6 +91,7 @@ export default function App() {
 						hub3Data={hub3Data}
 						pdfFile={uploadedFile}
 						onBack={handleBack}
+						onReset={handleReset}
 					/>
 				)}
 

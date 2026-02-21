@@ -52,12 +52,14 @@ interface PaymentFormProps {
 	initialValues: ParsedPdfFields;
 	onSubmit: (data: Hub3Data) => void;
 	onBack: () => void;
+	onReset: () => void;
 }
 
 export default function PaymentForm({
 	initialValues,
 	onSubmit,
 	onBack,
+	onReset,
 }: PaymentFormProps) {
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -306,6 +308,9 @@ export default function PaymentForm({
 				<div className="flex justify-between">
 					<Button type="button" variant="outline" onClick={onBack}>
 						Natrag
+					</Button>
+					<Button type="button" variant="outline" onClick={onReset}>
+						Novi PDF
 					</Button>
 					<Button type="submit">Generiraj barkod</Button>
 				</div>
