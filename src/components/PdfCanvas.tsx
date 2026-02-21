@@ -1,21 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import pdfjsLib from "@/lib/pdfWorker";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import BarcodePreview from "@/components/BarcodePreview";
-import {
-	generateBarcode,
-	type BarcodeResult,
-} from "@/modules/barcodeGenerator";
-import { exportPdfWithBarcode } from "@/modules/pdfExporter";
+import { usePdfCanvas } from "@/hooks/usePdfCanvas";
 import { useDraggable } from "@/hooks/useDraggable";
 import { useResizable } from "@/hooks/useResizable";
-import { downloadBlob, dataUrlToBlob } from "@/lib/download";
 import type { Hub3Data } from "@/types/hub3";
 
 // ============================= | Types | =============================
 
-interface Props {
+interface PdfCanvasProps {
 	hub3Data: Hub3Data;
 	pdfFile: File;
 	onBack: () => void;
@@ -26,21 +20,18 @@ interface Props {
 const INITIAL_BARCODE_SIZE = { width: 280, height: 100 };
 const BARCODE_ASPECT_RATIO =
 	INITIAL_BARCODE_SIZE.width / INITIAL_BARCODE_SIZE.height;
+const INITIAL_CANVAS_SIZE = { width: 0, height: 0 };
 
 // ============================= | Component | =============================
 
-export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
+export default function PdfCanvas({
+	hub3Data,
+	pdfFile,
+	onBack,
+}: PdfCanvasProps) {
 	// ============================= | State | =============================
 
-	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const renderingRef = useRef(false);
-
-	const [barcodeResult, setBarcodeResult] = useState<BarcodeResult | null>(
-		null,
-	);
-	const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
-	const [error, setError] = useState<string | null>(null);
-	const [exporting, setExporting] = useState(false);
+	const [canvasSize, setCanvasSize] = useState(INITIAL_CANVAS_SIZE);
 
 	const {
 		size: barcodeSize,
@@ -69,76 +60,21 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 		itemSize: barcodeSize,
 	});
 
-	// ============================= | Effects | =============================
-
-	// Runs once on mount. pdfFile and hub3Data are stable references passed from
-	// the parent and do not change after this component mounts, so omitting them
-	// from the dependency array is intentional.
-	useEffect(() => {
-		renderPdfPage();
-		loadBarcode();
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-	// ============================= | Handlers | =============================
-
-	async function renderPdfPage() {
-		if (renderingRef.current) return;
-		renderingRef.current = true;
-		try {
-			const arrayBuffer = await pdfFile.arrayBuffer();
-			const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-			const page = await pdf.getPage(1);
-			const containerWidth =
-				canvasRef.current?.parentElement?.clientWidth ?? 800;
-			const unscaledViewport = page.getViewport({ scale: 1 });
-			const scale = containerWidth / unscaledViewport.width;
-			const viewport = page.getViewport({ scale });
-			const canvas = canvasRef.current;
-			if (!canvas) return;
-			const context = canvas.getContext("2d");
-			if (!context) return;
-			canvas.width = viewport.width;
-			canvas.height = viewport.height;
-			setCanvasSize({ width: viewport.width, height: viewport.height });
-			await page.render({ canvasContext: context, viewport, canvas }).promise;
-		} catch (e) {
-			console.error(e);
-			setError("Greška pri renderiranju PDF-a.");
-		}
-	}
-
-	async function loadBarcode() {
-		try {
-			const result = await generateBarcode(hub3Data);
-			setBarcodeResult(result);
-		} catch {
-			setError("Greška pri generiranju barkoda.");
-		}
-	}
-
-	async function handleDownloadPdf() {
-		if (!barcodeResult) return;
-		setExporting(true);
-		try {
-			await exportPdfWithBarcode({
-				pdfFile,
-				barcodeResult,
-				position,
-				canvasSize,
-				barcodeSize,
-			});
-		} catch {
-			setError("Greška pri izvozu PDF-a.");
-		} finally {
-			setExporting(false);
-		}
-	}
-
-	async function handleDownloadBarcode() {
-		if (!barcodeResult) return;
-		const blob = await dataUrlToBlob(barcodeResult.dataUrl);
-		downloadBlob(blob, "barkod.png");
-	}
+	const {
+		canvasRef,
+		barcodeResult,
+		error,
+		exporting,
+		handleDownloadPdf,
+		handleDownloadBarcode,
+	} = usePdfCanvas({
+		hub3Data,
+		pdfFile,
+		position,
+		canvasSize,
+		barcodeSize,
+		onCanvasSizeChange: setCanvasSize,
+	});
 
 	// ============================= | Render | =============================
 

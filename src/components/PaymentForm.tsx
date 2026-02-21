@@ -48,7 +48,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-interface Props {
+interface PaymentFormProps {
 	initialValues: ParsedPdfFields;
 	onSubmit: (data: Hub3Data) => void;
 	onBack: () => void;
@@ -58,7 +58,7 @@ export default function PaymentForm({
 	initialValues,
 	onSubmit,
 	onBack,
-}: Props) {
+}: PaymentFormProps) {
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
 		defaultValues: {

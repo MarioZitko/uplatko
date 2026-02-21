@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 
 interface Position {
 	x: number;
@@ -28,7 +28,7 @@ interface UseDraggableResult {
 }
 
 export function useDraggable({
-	initialPosition = { x: 40, y: 40 },
+	initialPosition = { x: 0, y: 0 },
 	containerSize,
 	itemSize,
 }: UseDraggableOptions): UseDraggableResult {
@@ -36,63 +36,33 @@ export function useDraggable({
 	const [isDragging, setIsDragging] = useState(false);
 
 	const isDraggingRef = useRef(false);
-	const dragOffset = useRef<Position>({ x: 0, y: 0 });
-	const itemSizeRef = useRef(itemSize);
-	useEffect(() => {
-		itemSizeRef.current = itemSize;
-	}, [itemSize.width, itemSize.height]);
+	const dragStart = useRef<Position>({ x: 0, y: 0 });
+	const positionStart = useRef<Position>(initialPosition);
 
-	function getClientPos(e: React.MouseEvent | React.TouchEvent): Position {
-		if ("touches" in e) {
-			return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-		}
-		return { x: e.clientX, y: e.clientY };
-	}
-
-	function getCursorPosition(e: React.MouseEvent | React.TouchEvent): Position {
-		const el = e.currentTarget as HTMLElement;
-		const rect = el.getBoundingClientRect();
-		const client = getClientPos(e);
+	function clamp(pos: Position): Position {
 		return {
-			x: client.x - rect.left + el.scrollLeft,
-			y: client.y - rect.top + el.scrollTop,
+			x: Math.max(0, Math.min(containerSize.width - itemSize.width, pos.x)),
+			y: Math.max(0, Math.min(containerSize.height - itemSize.height, pos.y)),
 		};
 	}
 
-	function isOverItem(cursor: Position): boolean {
-		return (
-			cursor.x >= position.x &&
-			cursor.x <= position.x + itemSizeRef.current.width &&
-			cursor.y >= position.y &&
-			cursor.y <= position.y + itemSizeRef.current.height
-		);
-	}
-
-	function clamp(value: number, max: number): number {
-		return Math.max(0, Math.min(value, max));
-	}
-
-	function startDrag(cursor: Position) {
+	function startDrag(clientX: number, clientY: number) {
 		isDraggingRef.current = true;
 		setIsDragging(true);
-		dragOffset.current = {
-			x: cursor.x - position.x,
-			y: cursor.y - position.y,
-		};
+		dragStart.current = { x: clientX, y: clientY };
+		positionStart.current = position;
 	}
 
-	function moveDrag(cursor: Position) {
+	function moveDrag(clientX: number, clientY: number) {
 		if (!isDraggingRef.current) return;
-		setPosition({
-			x: clamp(
-				cursor.x - dragOffset.current.x,
-				containerSize.width - itemSizeRef.current.width,
-			),
-			y: clamp(
-				cursor.y - dragOffset.current.y,
-				containerSize.height - itemSizeRef.current.height,
-			),
-		});
+		const dx = clientX - dragStart.current.x;
+		const dy = clientY - dragStart.current.y;
+		setPosition(
+			clamp({
+				x: positionStart.current.x + dx,
+				y: positionStart.current.y + dy,
+			}),
+		);
 	}
 
 	function endDrag() {
@@ -101,13 +71,11 @@ export function useDraggable({
 	}
 
 	function onMouseDown(e: React.MouseEvent) {
-		const cursor = getCursorPosition(e);
-		if (!isOverItem(cursor)) return;
-		startDrag(cursor);
+		startDrag(e.clientX, e.clientY);
 	}
 
 	function onMouseMove(e: React.MouseEvent) {
-		moveDrag(getCursorPosition(e));
+		moveDrag(e.clientX, e.clientY);
 	}
 
 	function onMouseUp() {
@@ -115,16 +83,11 @@ export function useDraggable({
 	}
 
 	function onTouchStart(e: React.TouchEvent) {
-		const cursor = getCursorPosition(e);
-		if (!isOverItem(cursor)) return;
-		e.preventDefault(); // prevent scroll while dragging barcode
-		startDrag(cursor);
+		startDrag(e.touches[0].clientX, e.touches[0].clientY);
 	}
 
 	function onTouchMove(e: React.TouchEvent) {
-		if (!isDraggingRef.current) return;
-		e.preventDefault();
-		moveDrag(getCursorPosition(e));
+		moveDrag(e.touches[0].clientX, e.touches[0].clientY);
 	}
 
 	function onTouchEnd() {

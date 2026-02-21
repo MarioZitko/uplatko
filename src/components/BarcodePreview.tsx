@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-interface Props {
+interface BarcodePreviewProps {
 	barcodeDataUrl: string;
 	onDownloadBarcode: () => void;
 }
@@ -9,7 +9,7 @@ interface Props {
 export default function BarcodePreview({
 	barcodeDataUrl,
 	onDownloadBarcode,
-}: Props) {
+}: BarcodePreviewProps) {
 	return (
 		<Card>
 			<CardContent className="flex flex-col items-center gap-4 py-6">
