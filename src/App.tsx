@@ -17,7 +17,7 @@ export default function App() {
 	const [hub3Data, setHub3Data] = useState<Hub3Data | null>(null);
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 	const [settingsOpen, setSettingsOpen] = useState(false);
-	const { theme, setTheme } = useTheme();
+	const { theme, resolvedTheme, setTheme } = useTheme();
 
 	function handlePdfParsed(fields: ParsedPdfFields, file: File) {
 		setParsedFields(fields);
@@ -42,7 +42,7 @@ export default function App() {
 	}
 
 	function toggleTheme() {
-		setTheme(theme === "dark" ? "light" : "dark");
+		setTheme(resolvedTheme === "dark" ? "light" : "dark");
 	}
 
 	return (
@@ -60,7 +60,7 @@ export default function App() {
 							onClick={toggleTheme}
 							aria-label="Promijeni temu"
 						>
-							{theme === "dark" ? (
+							{resolvedTheme === "dark" ? (
 								<Sun className="h-5 w-5" />
 							) : (
 								<Moon className="h-5 w-5" />
