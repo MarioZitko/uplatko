@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { extractTextFromPdf, parsePdfText } from "@/modules/pdfParser";
@@ -11,21 +12,28 @@ import {
 } from "@/lib/llmStorage";
 import type { ParsedPdfFields } from "@/types/hub3";
 
+// ============================= | Types | =============================
+
 interface Props {
 	onParsed: (fields: ParsedPdfFields, file: File) => void;
 }
 
+// ============================= | Component | =============================
+
 export default function PdfUploader({ onParsed }: Props) {
+	// ============================= | State | =============================
+
 	const inputRef = useRef<HTMLInputElement>(null);
 	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+
+	// ============================= | Handlers | =============================
 
 	async function handleFile(file: File) {
 		if (file.type !== "application/pdf") {
-			setError("Molimo odaberite PDF datoteku.");
+			toast.error("Molimo odaberite PDF datoteku.");
 			return;
 		}
-		setError(null);
+
 		setLoading(true);
 		try {
 			const text = await extractTextFromPdf(file);
@@ -35,7 +43,7 @@ export default function PdfUploader({ onParsed }: Props) {
 			if (provider === "gemini") {
 				const apiKey = getGeminiApiKey();
 				if (!apiKey) {
-					setError(
+					toast.warning(
 						"Gemini je odabran ali API ključ nije postavljen. Dodaj ga u postavkama.",
 					);
 					fields = parsePdfText(text);
@@ -44,14 +52,16 @@ export default function PdfUploader({ onParsed }: Props) {
 						fields = await parseWithGemini(text, apiKey);
 					} catch (err) {
 						console.warn("Gemini parsing failed, falling back to regex:", err);
-						setError("Gemini nije uspio, korišten regex. Provjerite polja.");
+						toast.warning(
+							"Gemini nije uspio, korišten regex. Provjerite polja.",
+						);
 						fields = parsePdfText(text);
 					}
 				}
 			} else if (provider === "groq") {
 				const apiKey = getGroqApiKey();
 				if (!apiKey) {
-					setError(
+					toast.warning(
 						"Groq je odabran ali API ključ nije postavljen. Dodaj ga u postavkama.",
 					);
 					fields = parsePdfText(text);
@@ -60,7 +70,7 @@ export default function PdfUploader({ onParsed }: Props) {
 						fields = await parseWithGroq(text, apiKey);
 					} catch (err) {
 						console.warn("Groq parsing failed, falling back to regex:", err);
-						setError("Groq nije uspio, korišten regex. Provjerite polja.");
+						toast.warning("Groq nije uspio, korišten regex. Provjerite polja.");
 						fields = parsePdfText(text);
 					}
 				}
@@ -70,7 +80,7 @@ export default function PdfUploader({ onParsed }: Props) {
 
 			onParsed(fields, file);
 		} catch {
-			setError("Greška pri čitanju PDF-a. Pokušajte ponovo.");
+			toast.error("Greška pri čitanju PDF-a. Pokušajte ponovo.");
 		} finally {
 			setLoading(false);
 		}
@@ -86,6 +96,8 @@ export default function PdfUploader({ onParsed }: Props) {
 		const file = e.dataTransfer.files?.[0];
 		if (file) handleFile(file);
 	}
+
+	// ============================= | Render | =============================
 
 	return (
 		<div className="space-y-4">
@@ -113,7 +125,6 @@ export default function PdfUploader({ onParsed }: Props) {
 				</CardContent>
 			</Card>
 
-			{error && <p className="text-sm text-destructive">{error}</p>}
 			<p className="text-xs text-muted-foreground">
 				Podaci ostaju lokalno u pregledniku i nigdje se ne šalju.
 			</p>

@@ -22,11 +22,23 @@ Rules:
 - amount must be a number, not a string
 - Return only the JSON object, nothing else`;
 
+/**
+ * Extracts and parses a JSON object from a raw API response string.
+ * Handles extra whitespace, BOM characters, and markdown code fences.
+ * Throws a descriptive error if no valid JSON object is found or parsing fails.
+ */
 function extractJson(raw: string): ParsedPdfFields {
 	const cleaned = raw.trim().replace(/^\uFEFF/, "");
 	const match = cleaned.match(/\{[\s\S]*\}/);
 	if (!match) throw new Error("No JSON object found in Groq response");
-	return JSON.parse(match[0]) as ParsedPdfFields;
+
+	try {
+		return JSON.parse(match[0]) as ParsedPdfFields;
+	} catch (e) {
+		throw new Error(
+			`Groq returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`,
+		);
+	}
 }
 
 export async function parseWithGroq(

@@ -3,12 +3,17 @@ import pdfjsLib from "@/lib/pdfWorker";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import BarcodePreview from "@/components/BarcodePreview";
-import { generateBarcode } from "@/modules/barcodeGenerator";
+import {
+	generateBarcode,
+	type BarcodeResult,
+} from "@/modules/barcodeGenerator";
 import { exportPdfWithBarcode } from "@/modules/pdfExporter";
 import { useDraggable } from "@/hooks/useDraggable";
 import { useResizable } from "@/hooks/useResizable";
 import { downloadBlob, dataUrlToBlob } from "@/lib/download";
 import type { Hub3Data } from "@/types/hub3";
+
+// ============================= | Types | =============================
 
 interface Props {
 	hub3Data: Hub3Data;
@@ -16,13 +21,23 @@ interface Props {
 	onBack: () => void;
 }
 
+// ============================= | Constants | =============================
+
 const INITIAL_BARCODE_SIZE = { width: 280, height: 100 };
 const BARCODE_ASPECT_RATIO =
 	INITIAL_BARCODE_SIZE.width / INITIAL_BARCODE_SIZE.height;
 
+// ============================= | Component | =============================
+
 export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
+	// ============================= | State | =============================
+
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const [barcodeDataUrl, setBarcodeDataUrl] = useState<string | null>(null);
+	const renderingRef = useRef(false);
+
+	const [barcodeResult, setBarcodeResult] = useState<BarcodeResult | null>(
+		null,
+	);
 	const [canvasSize, setCanvasSize] = useState({ width: 0, height: 0 });
 	const [error, setError] = useState<string | null>(null);
 	const [exporting, setExporting] = useState(false);
@@ -54,12 +69,17 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 		itemSize: barcodeSize,
 	});
 
-	const renderingRef = useRef(false);
+	// ============================= | Effects | =============================
 
+	// Runs once on mount. pdfFile and hub3Data are stable references passed from
+	// the parent and do not change after this component mounts, so omitting them
+	// from the dependency array is intentional.
 	useEffect(() => {
 		renderPdfPage();
 		loadBarcode();
-	}, []);
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+	// ============================= | Handlers | =============================
 
 	async function renderPdfPage() {
 		if (renderingRef.current) return;
@@ -90,19 +110,19 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 	async function loadBarcode() {
 		try {
 			const result = await generateBarcode(hub3Data);
-			setBarcodeDataUrl(result.dataUrl);
+			setBarcodeResult(result);
 		} catch {
 			setError("Greška pri generiranju barkoda.");
 		}
 	}
 
 	async function handleDownloadPdf() {
-		if (!barcodeDataUrl) return;
+		if (!barcodeResult) return;
 		setExporting(true);
 		try {
 			await exportPdfWithBarcode({
 				pdfFile,
-				hub3Data,
+				barcodeResult,
 				position,
 				canvasSize,
 				barcodeSize,
@@ -115,17 +135,21 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 	}
 
 	async function handleDownloadBarcode() {
-		if (!barcodeDataUrl) return;
-		const blob = await dataUrlToBlob(barcodeDataUrl);
+		if (!barcodeResult) return;
+		const blob = await dataUrlToBlob(barcodeResult.dataUrl);
 		downloadBlob(blob, "barkod.png");
 	}
 
+	// ============================= | Render | =============================
+
 	return (
 		<div className="space-y-6">
-			<BarcodePreview
-				hub3Data={hub3Data}
-				onDownloadBarcode={handleDownloadBarcode}
-			/>
+			{barcodeResult && (
+				<BarcodePreview
+					barcodeDataUrl={barcodeResult.dataUrl}
+					onDownloadBarcode={handleDownloadBarcode}
+				/>
+			)}
 
 			<Card>
 				<CardContent className="py-4 space-y-3">
@@ -146,7 +170,7 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 						onTouchEnd={onTouchEnd}
 					>
 						<canvas ref={canvasRef} />
-						{barcodeDataUrl && (
+						{barcodeResult && (
 							<div
 								className="absolute select-none"
 								style={{
@@ -156,16 +180,15 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 									height: barcodeSize.height,
 									cursor: isDragging ? "grabbing" : "grab",
 									border: "2px dashed #888",
-									touchAction: "none", // prevent browser scroll interfering with drag
+									touchAction: "none",
 								}}
 							>
 								<img
-									src={barcodeDataUrl}
+									src={barcodeResult.dataUrl}
 									alt="HUB3 barkod"
 									draggable={false}
 									style={{ width: "100%", height: "100%", display: "block" }}
 								/>
-								{/* SE resize handle — large enough to tap on mobile */}
 								<div
 									onMouseDown={onResizeMouseDown}
 									onTouchStart={onResizeTouchStart}
@@ -194,7 +217,7 @@ export default function PdfCanvas({ hub3Data, pdfFile, onBack }: Props) {
 				</Button>
 				<Button
 					onClick={handleDownloadPdf}
-					disabled={exporting || !barcodeDataUrl}
+					disabled={exporting || !barcodeResult}
 				>
 					{exporting ? "Izvoz..." : "Preuzmi PDF s barkodom"}
 				</Button>

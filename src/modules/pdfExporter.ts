@@ -1,11 +1,10 @@
 import { PDFDocument } from "pdf-lib";
-import { generateBarcode } from "@/modules/barcodeGenerator";
 import { downloadBlob } from "@/lib/download";
-import type { Hub3Data } from "@/types/hub3";
+import type { BarcodeResult } from "@/modules/barcodeGenerator";
 
 interface ExportOptions {
 	pdfFile: File;
-	hub3Data: Hub3Data;
+	barcodeResult: BarcodeResult;
 	position: { x: number; y: number };
 	canvasSize: { width: number; height: number };
 	barcodeSize: { width: number; height: number };
@@ -14,12 +13,9 @@ interface ExportOptions {
 export async function exportPdfWithBarcode(
 	options: ExportOptions,
 ): Promise<void> {
-	const { pdfFile, hub3Data, position, canvasSize, barcodeSize } = options;
+	const { pdfFile, barcodeResult, position, canvasSize, barcodeSize } = options;
 
-	const [pdfBytes, barcodeResult] = await Promise.all([
-		pdfFile.arrayBuffer(),
-		generateBarcode(hub3Data),
-	]);
+	const pdfBytes = await pdfFile.arrayBuffer();
 
 	const pdfDoc = await PDFDocument.load(pdfBytes);
 	const page = pdfDoc.getPages()[0];

@@ -25,12 +25,23 @@ Rules:
 Invoice text:
 `;
 
-// Gemini may return malformed JSON with extra whitespace or BOM — strip before parsing
+/**
+ * Extracts and parses a JSON object from a raw API response string.
+ * Handles extra whitespace, BOM characters, and markdown code fences.
+ * Throws a descriptive error if no valid JSON object is found or parsing fails.
+ */
 function extractJson(raw: string): ParsedPdfFields {
 	const cleaned = raw.trim().replace(/^\uFEFF/, "");
 	const match = cleaned.match(/\{[\s\S]*\}/);
 	if (!match) throw new Error("No JSON object found in Gemini response");
-	return JSON.parse(match[0]) as ParsedPdfFields;
+
+	try {
+		return JSON.parse(match[0]) as ParsedPdfFields;
+	} catch (e) {
+		throw new Error(
+			`Gemini returned invalid JSON: ${e instanceof Error ? e.message : String(e)}`,
+		);
+	}
 }
 
 export async function parseWithGemini(
