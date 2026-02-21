@@ -17,7 +17,7 @@ export default function App() {
 	const [hub3Data, setHub3Data] = useState<Hub3Data | null>(null);
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 	const [settingsOpen, setSettingsOpen] = useState(false);
-	const { theme, resolvedTheme, setTheme } = useTheme();
+	const { resolvedTheme, setTheme } = useTheme();
 
 	function handlePdfParsed(fields: ParsedPdfFields, file: File) {
 		setParsedFields(fields);

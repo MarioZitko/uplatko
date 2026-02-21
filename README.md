@@ -16,6 +16,7 @@ Uplatko je web aplikacija koja čita PDF račune, izvlači podatke o plaćanju i
 - **Pozicioniranje drag & drop** — postavi barkod na željenu poziciju na PDF stranici
 - **Promjena veličine** — povuci ugao za prilagodbu veličine barkoda (radi i na mobitelu)
 - **Preuzimanje** — PDF s ugrađenim barkodom ili barkod kao PNG
+- **Tamni način rada** — automatski prati sistemske postavke, ručna promjena gumbom
 - **Privatnost** — svi podaci ostaju u pregledniku, API ključevi se čuvaju samo u localStorage
 
 ---
@@ -27,6 +28,8 @@ Uplatko je web aplikacija koja čita PDF račune, izvlači podatke o plaćanju i
 | React + TypeScript      | UI framework                               |
 | Vite                    | Build alat                                 |
 | shadcn/ui + Tailwind v4 | Komponente i stilizacija                   |
+| next-themes             | Tamni način rada                           |
+| sonner                  | Toast obavijesti                           |
 | pdfjs-dist              | Čitanje i renderiranje PDF-a u pregledniku |
 | pdf-lib                 | Ugrađivanje barkoda u PDF                  |
 | bwip-js                 | Generiranje PDF417 barkoda                 |
@@ -99,28 +102,30 @@ Opis plaćanja
 ```
 src/
 ├── components/
-│   ├── ui/                  # shadcn komponente
-│   ├── PdfUploader.tsx      # Upload i parsiranje
-│   ├── PaymentForm.tsx      # Forma za uređivanje podataka
-│   ├── BarcodePreview.tsx   # Pregled barkoda
-│   ├── PdfCanvas.tsx        # PDF prikaz + drag & drop
-│   └── LlmSettingsDialog.tsx
+│   ├── ui/                    # shadcn komponente
+│   ├── BarcodePreview.tsx     # Pregled barkoda (prezentacijska komponenta)
+│   ├── LlmSettingsDialog.tsx  # Postavke AI providera
+│   ├── PaymentForm.tsx        # Forma za uređivanje podataka
+│   ├── PdfCanvas.tsx          # PDF prikaz + drag & drop pozicioniranje
+│   └── PdfUploader.tsx        # Upload i pokretanje parsiranja
 ├── hooks/
-│   ├── useDraggable.ts
-│   └── useResizable.ts
+│   ├── useDraggable.ts        # Drag & drop logika
+│   ├── usePdfCanvas.ts        # PDF rendering, barcode učitavanje, export
+│   ├── usePdfParser.ts        # Orchestracija parsiranja (regex + AI fallback)
+│   └── useResizable.ts        # Resize logika s touch podrškom
 ├── lib/
-│   ├── llmStorage.ts        # localStorage za API ključeve
-│   ├── download.ts
-│   └── pdfWorker.ts
+│   ├── download.ts            # Blob download helpers
+│   ├── llmStorage.ts          # localStorage za API ključeve
+│   └── pdfWorker.ts           # pdfjs worker setup
 ├── modules/
-│   ├── pdfParser.ts         # Regex parser
-│   ├── geminiParser.ts      # Gemini API
-│   ├── groqParser.ts        # Groq API
-│   ├── hub3Formatter.ts     # HUB3 string builder
-│   ├── barcodeGenerator.ts
-│   └── pdfExporter.ts
+│   ├── barcodeGenerator.ts    # PDF417 generiranje (bwip-js)
+│   ├── geminiParser.ts        # Gemini API integracija
+│   ├── groqParser.ts          # Groq API integracija
+│   ├── hub3Formatter.ts       # HUB3 string builder + sanitizacija
+│   ├── pdfExporter.ts         # Ugrađivanje barkoda u PDF (pdf-lib)
+│   └── pdfParser.ts           # Regex parser za hrvatska zaglavlja
 └── types/
-    └── hub3.ts
+    └── hub3.ts                # Hub3Data, ParsedPdfFields, PURPOSE_CODES
 ```
 
 ---
@@ -130,6 +135,7 @@ src/
 - PDF parsiranje je best-effort — layout računa varira između sustava (Sol, eRačun, itd.), polja uvijek treba provjeriti
 - Podržana je samo prva stranica PDF-a
 - Gemini besplatni tier ima dnevne limite koji se mogu brzo iscrpiti
+- API ključevi se čuvaju u localStorage — izloženi su XSS napadima; koristiti ograničene ključeve (npr. Gemini ključeve skopane na domenu)
 
 ---
 
