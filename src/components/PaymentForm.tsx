@@ -36,7 +36,10 @@ const formSchema = z.object({
 	recipientCity: z.string().max(27),
 	iban: z
 		.string()
-		.regex(/^HR\d{19}$/, "Neispravan IBAN format (HR + 19 znamenki)"),
+		.regex(
+			/^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$/,
+			"Neispravan IBAN format (npr. HR1234567890123456789)",
+		),
 	amount: z.number().positive("Iznos mora biti veći od 0"),
 	model: z.string().min(1, "Obavezno polje").max(5),
 	referenceNumber: z.string().min(1, "Obavezno polje"),
@@ -53,6 +56,7 @@ interface PaymentFormProps {
 	onSubmit: (data: Hub3Data) => void;
 	onBack: () => void;
 	onReset: () => void;
+	resetLabel?: string;
 }
 
 export default function PaymentForm({
@@ -60,6 +64,7 @@ export default function PaymentForm({
 	onSubmit,
 	onBack,
 	onReset,
+	resetLabel = "Početak",
 }: PaymentFormProps) {
 	const form = useForm<FormValues>({
 		resolver: zodResolver(formSchema),
@@ -71,7 +76,7 @@ export default function PaymentForm({
 			recipientAddress: initialValues.recipientAddress ?? "",
 			recipientCity: initialValues.recipientCity ?? "",
 			iban: initialValues.iban ?? "",
-			amount: initialValues.amount ?? 0,
+			amount: initialValues.amount ?? (undefined as unknown as number),
 			model: initialValues.model ?? "HR68",
 			referenceNumber: initialValues.referenceNumber ?? "",
 			purposeCode: initialValues.purposeCode ?? "OTHR",
@@ -186,8 +191,8 @@ export default function PaymentForm({
 									<FormControl>
 										<Input
 											{...field}
-											placeholder="HR..."
-											maxLength={21}
+											placeholder="HR2310010051863000160"
+											maxLength={34}
 											onChange={(e) =>
 												field.onChange(e.target.value.toUpperCase())
 											}
@@ -310,7 +315,7 @@ export default function PaymentForm({
 						Natrag
 					</Button>
 					<Button type="button" variant="outline" onClick={onReset}>
-						Novi PDF
+						{resetLabel}
 					</Button>
 					<Button type="submit">Generiraj barkod</Button>
 				</div>

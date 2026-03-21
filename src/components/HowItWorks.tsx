@@ -3,9 +3,9 @@ import { FileUp, ClipboardCheck, ScanBarcode, Download } from "lucide-react";
 const steps = [
 	{
 		icon: FileUp,
-		title: "Učitajte PDF račun",
+		title: "Učitajte PDF račun ili XML e-račun",
 		description:
-			"Povucite PDF datoteku ili kliknite za odabir. Podaci o primatelju, IBAN-u i iznosu automatski se izvlače iz dokumenta.",
+			"Povucite PDF ili XML e-račun (UBL format, Fiskalizacija 2.0) ili kliknite za odabir. Podaci o primatelju, IBAN-u i iznosu automatski se izvlače.",
 	},
 	{
 		icon: ClipboardCheck,
@@ -23,7 +23,7 @@ const steps = [
 		icon: Download,
 		title: "Preuzmite gotov PDF",
 		description:
-			"Preuzmite PDF s ugrađenim barkodom ili samo barkod kao PNG. Spreman za slanje klijentu ili ispis.",
+			"Preuzmite PDF s ugrađenim barkodom ili samo barkod kao PNG. Skenirajte u m-zabi, PBZ365 ili Erste Netbanking — plaćanje za 10 sekundi.",
 	},
 ];
 

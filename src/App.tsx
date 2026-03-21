@@ -6,25 +6,51 @@ import { Toaster } from "@/components/ui/sonner";
 import PdfUploader from "@/components/PdfUploader";
 import PaymentForm from "@/components/PaymentForm";
 import PdfCanvas from "@/components/PdfCanvas";
+import BarcodeOnlyStep from "@/components/BarcodeOnlyStep";
 import LlmSettingsDialog from "@/components/LlmSettingsDialog";
 import HowItWorks from "@/components/HowItWorks";
 import SupportSection from "@/components/SupportSection";
 import SeoGuide from "@/components/SeoGuide";
 import type { ParsedPdfFields, Hub3Data } from "@/types/hub3";
 
+// ============================= | Types | =============================
+
 type Step = "upload" | "form" | "preview";
+type SourceType = "pdf" | "xml" | "manual";
+
+// ============================= | Component | =============================
 
 export default function App() {
+	// ============================= | State | =============================
+
 	const [step, setStep] = useState<Step>("upload");
+	const [sourceType, setSourceType] = useState<SourceType>("manual");
 	const [parsedFields, setParsedFields] = useState<ParsedPdfFields>({});
 	const [hub3Data, setHub3Data] = useState<Hub3Data | null>(null);
 	const [uploadedFile, setUploadedFile] = useState<File | null>(null);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const { resolvedTheme, setTheme } = useTheme();
 
+	// ============================= | Handlers | =============================
+
 	function handlePdfParsed(fields: ParsedPdfFields, file: File) {
 		setParsedFields(fields);
 		setUploadedFile(file);
+		setSourceType("pdf");
+		setStep("form");
+	}
+
+	function handleXmlParsed(fields: ParsedPdfFields) {
+		setParsedFields(fields);
+		setUploadedFile(null);
+		setSourceType("xml");
+		setStep("form");
+	}
+
+	function handleManual() {
+		setParsedFields({});
+		setUploadedFile(null);
+		setSourceType("manual");
 		setStep("form");
 	}
 
@@ -41,12 +67,15 @@ export default function App() {
 		setParsedFields({});
 		setHub3Data(null);
 		setUploadedFile(null);
+		setSourceType("manual");
 		setStep("upload");
 	}
 
 	function toggleTheme() {
 		setTheme(resolvedTheme === "dark" ? "light" : "dark");
 	}
+
+	// ============================= | Render | =============================
 
 	return (
 		<main className="min-h-screen bg-background text-foreground">
@@ -62,7 +91,9 @@ export default function App() {
 								Uplatko
 							</h1>
 						</button>
-						<p className="text-muted-foreground">Generator HUB3 uplatnica</p>
+						<p className="text-muted-foreground">
+							Generiraj barkod za plaćanje iz PDF-a ili XML e-računa
+						</p>
 					</div>
 					<div className="flex items-center gap-1">
 						<Button
@@ -90,12 +121,17 @@ export default function App() {
 
 				{step === "upload" && (
 					<>
-						<PdfUploader onParsed={handlePdfParsed} />
+						<PdfUploader
+							onPdfParsed={handlePdfParsed}
+							onXmlParsed={handleXmlParsed}
+							onManual={handleManual}
+						/>
 						<HowItWorks />
 						<SupportSection />
 						<SeoGuide />
 					</>
 				)}
+
 				{step === "form" && (
 					<PaymentForm
 						initialValues={parsedFields}
@@ -104,10 +140,20 @@ export default function App() {
 						onReset={handleReset}
 					/>
 				)}
-				{step === "preview" && hub3Data && uploadedFile && (
+
+				{step === "preview" && hub3Data && sourceType === "pdf" && uploadedFile && (
 					<PdfCanvas
 						hub3Data={hub3Data}
 						pdfFile={uploadedFile}
+						onBack={handleBack}
+						onReset={handleReset}
+					/>
+				)}
+
+				{step === "preview" && hub3Data && sourceType !== "pdf" && (
+					<BarcodeOnlyStep
+						hub3Data={hub3Data}
+						sourceType={sourceType === "xml" ? "xml" : "manual"}
 						onBack={handleBack}
 						onReset={handleReset}
 					/>

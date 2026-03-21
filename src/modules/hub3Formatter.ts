@@ -32,7 +32,7 @@ export function buildHub3String(data: Hub3Data): string {
 		sanitizeAndTruncate(data.recipientName, 30),
 		sanitizeAndTruncate(data.recipientAddress, 27),
 		sanitizeAndTruncate(data.recipientCity, 27),
-		data.iban, // validated by zod: /^HR\d{19}$/ — no newlines possible
+		data.iban, // validated by zod: /^[A-Z]{2}\d{2}[A-Z0-9]{1,30}$/ — any IBAN
 		sanitize(data.model), // free-text, uppercased, no length limit concern
 		sanitize(data.referenceNumber), // free-text
 		data.purposeCode, // enum — always a 4-char code
