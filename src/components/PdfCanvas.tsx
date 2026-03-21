@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import BarcodePreview from "@/components/BarcodePreview";
+import { SupportNudge } from "@/components/SupportSection";
 import { usePdfCanvas } from "@/hooks/usePdfCanvas";
 import { useDraggable } from "@/hooks/useDraggable";
 import { useResizable } from "@/hooks/useResizable";
@@ -163,6 +164,8 @@ export default function PdfCanvas({
 					{exporting ? "Izvoz..." : "Preuzmi PDF s barkodom"}
 				</Button>
 			</div>
+
+			<SupportNudge />
 		</div>
 	);
 }

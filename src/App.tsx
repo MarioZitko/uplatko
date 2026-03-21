@@ -7,6 +7,9 @@ import PdfUploader from "@/components/PdfUploader";
 import PaymentForm from "@/components/PaymentForm";
 import PdfCanvas from "@/components/PdfCanvas";
 import LlmSettingsDialog from "@/components/LlmSettingsDialog";
+import HowItWorks from "@/components/HowItWorks";
+import SupportSection from "@/components/SupportSection";
+import SeoGuide from "@/components/SeoGuide";
 import type { ParsedPdfFields, Hub3Data } from "@/types/hub3";
 
 type Step = "upload" | "form" | "preview";
@@ -50,7 +53,15 @@ export default function App() {
 			<div className="max-w-3xl mx-auto px-4 py-10">
 				<div className="flex items-start justify-between mb-8">
 					<div>
-						<h1 className="text-3xl font-bold mb-2">Uplatko</h1>
+						<button
+							onClick={handleReset}
+							className="text-left group cursor-pointer"
+							aria-label="Idi na početak"
+						>
+							<h1 className="text-3xl font-bold mb-2 group-hover:opacity-75 transition-opacity">
+								Uplatko
+							</h1>
+						</button>
 						<p className="text-muted-foreground">Generator HUB3 uplatnica</p>
 					</div>
 					<div className="flex items-center gap-1">
@@ -77,7 +88,14 @@ export default function App() {
 					</div>
 				</div>
 
-				{step === "upload" && <PdfUploader onParsed={handlePdfParsed} />}
+				{step === "upload" && (
+					<>
+						<PdfUploader onParsed={handlePdfParsed} />
+						<HowItWorks />
+						<SupportSection />
+						<SeoGuide />
+					</>
+				)}
 				{step === "form" && (
 					<PaymentForm
 						initialValues={parsedFields}
